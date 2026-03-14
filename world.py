@@ -1,4 +1,4 @@
-# complete reimplementation of the step 1-4;
+# complete implementation of the world map
 # goal :- 
         ## to implement a world class which will create a entire 2d world map
         ## to implent a 2d 20*20 grid 
@@ -35,7 +35,8 @@ class World:
         self.grid[:,0]=1
         self.grid[:,-1]=1
 
-    def render(self):
+    def render(self,robot):
+        self.robot = robot # remove this line after realizing the mistake
         for i in range(self.size):
             row_build = ""
             for j in range(self.size):
@@ -43,6 +44,11 @@ class World:
                 if self.grid[i][j]==1:
                     row_build+="#"
                 elif self.grid[i][j]==0:
+                    if (self.robot.i,self.robot.j)==(i,j):
+                        row_build+="R"
+                        flag = 1
+                        continue
+
                     for obj_name,obj_data in self.obj_dict.items():
                         if obj_data["location"]==(i,j):
                             flag=1
@@ -50,6 +56,8 @@ class World:
                             break
                     if not flag:
                         row_build+="."
+                    
+                        
             print(row_build)
 
     def _place_walls(self):
@@ -68,17 +76,48 @@ class World:
 
 
     def place_objects(self,obj_name,obj_type): 
-        if len(self.free_cells)>0:
+        if self.free_cells:
           indx = self.free_cells.pop()
-        self.obj_dict[obj_name]={"type":obj_type,"location":indx}
+          self.obj_dict[obj_name]={"type":obj_type,"location":indx}
 
 
 
+# complete implementation of robot class 
+# goal :- 
+       ## putting a robot inside the world map whcih we created earlier 
+       ## and giving it movements in the grid 
 
-                 
+class Robot:
+    def __init__(self,world):
+        self.world = world    
+        self.initial_pos = self.world.free_cells[0] # remove [0] and use .pop() after realizing the mistkae with [0]
+        self.i,self.j = self.initial_pos
+
+
+    def movement(self,direction):
+    ## make this entire check functionality to move to a different check function which return bool for better architecture
+       if direction=="up":
+           if self.world.grid[self.i-1][self.j]==0:
+               self.i = self.i-1
+       elif direction == "down":
+            if self.world.grid[self.i+1][self.j]==0:
+               self.i = self.i+1
+       elif direction == "right":
+            if self.world.grid[self.i][self.j+1]==0:
+               self.j = self.j+1
+       elif direction == "left":
+            if self.world.grid[self.i][self.j-1]==0:
+               self.j = self.j-1
+
+
+
 world=World()
+robot=Robot(world)
 world.place_objects("chair_1","chair")
 world.place_objects("chair_2","chair")
 world.place_objects("person_1","person")
 world.place_objects("table_1","table")
-world.render()
+robot.movement("up")
+robot.movement("down")
+robot.movement("left")
+world.render(robot)
