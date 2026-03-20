@@ -1,4 +1,4 @@
-# goal: to implement a 20*20 2d grid which is our world view
+# World goal: to implement a 20*20 2d grid which is our world view
       ## -> the grid will have walls on it's boundary 
       ## -> and inside 20% of indices will be walls which comes randomly not hard coded
       ## -> after that objects needs to appear inside grid 
@@ -37,10 +37,11 @@ class World:
             self.grid[x][y] = 1 
 
     def put_objects(self,obj_type,obj_name):
+        if self.free_cells:
             x,y = self.free_cells.pop()
             self.obj_dict[obj_name]={"type":obj_type,"pos":(x,y)}
 
-    def render(self):
+    def render(self,robot):
         for i in range(self.size):
             row_build=""
             for j in range(self.size):
@@ -48,20 +49,84 @@ class World:
                 if self.grid[i][j]==1:
                     row_build+="#"
                 elif self.grid[i][j]==0:
-                    for obj_name,obj_data in self.obj_dict.items():
-                         if (i,j) == obj_data["pos"]:
-                             row_build+=obj_data["type"][0].upper()
-                             flag = 1 
-                             break
+                    if (i,j) == (robot.i,robot.j):
+                        row_build+="R"
+                        flag = 1
+                        continue
+                    if not flag:
+                        for obj_name,obj_data in self.obj_dict.items():
+                             if (i,j) == obj_data["pos"]:
+                                 row_build+=obj_data["type"][0].upper()
+                                 flag = 1 
+                                 break
                     if not flag:
                       row_build+="."
             print(row_build)
-          
+         
+# Robot goals: 
+        ## existing in the world, which gets shown using render of world
+        ## moving in the world 
+        ## observing in the world
+        ## creating own local world view
+        ## creating mapping between the two worlds 
+        ## remembering objects which were encountered and where 
+class Robot:
+    def __init__(self,world):
+        self.world = world
+        self.i,self.j = self.world.free_cells.pop()
+        self.robo_occupied = []
+        self.obs_dict = {}
+
+    def movement(self,dirxn):
+        if self.world.grid[self.i-1][self.j]!=1 and dirxn=="up":
+            self.i-=1
+            self.robo_occupied.append((self.i,self.j))
+
+        if self.world.grid[self.i+1][self.j]!=1 and dirxn=="down":
+            self.i+=1
+            self.robo_occupied.append((self.i,self.j))
+
+
+        if self.world.grid[self.i][self.j-1]!=1 and dirxn=="left":
+            self.j-=1
+            self.robo_occupied.append((self.i,self.j))
+
+
+        if self.world.grid[self.i][self.j+1]!=1 and dirxn=="right":
+            self.j+=1 
+            self.robo_occupied.append((self.i,self.j))
+
+
+    def observation(self):
+        posi = []
+        for i in range(self.i-2,self.i+3):
+            for j in range(self.j-2,self.j+3):
+                 if 0<=i<self.world.size and 0 <= j < self.world.size:
+                      posi.append((i,j))
+
+        pos_dict = {}
+        for obj_name,obj_data in self.world.obj_dict.items():
+            pos_dict[obj_data["pos"]] = {"obj_name":obj_name,"obj_type":obj_data["type"]}
+            
+         
+        for i in posi:
+           if i in pos_dict:
+              self.obs_dict[i]={pos_dict[i]}
+
+
 
 world = World()
+robot = Robot(world)
 world.put_objects("chair","chair_1")
 world.put_objects("table","table_1")
 world.put_objects("stairs","stairs_1")
-world.render()
+robot.movement("up")
+robot.movement("right")
+robot.movement("down")
+robot.observation()
+print("robot:", robot.i, robot.j)
+print("objects:", world.obj_dict)
+print(robot.obs_dict)
+world.render(robot)
 
 
